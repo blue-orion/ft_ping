@@ -1,0 +1,1 @@
+NAME = ft_ping
