@@ -36,7 +36,11 @@ int	main(int ac, char **av) {
 	char	packet[PACKET_SIZE];
 
 	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = inet_addr(av[1]);
+	addr.sin_family = AF_INET;
+	if (inet_pton(AF_INET, argv[1], &addr.sin_addr) != 1) {
+		perror("inet_pton");
+		return 1;
+	}
 
 	memset(&header, 0, sizeof(header));
 	header.icmp_type = ECHO_REQUEST;
