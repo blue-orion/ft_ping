@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  if (inet_pton(AF_INET, av[1], &addr.sin_addr) != 1) {
+  if (inet_pton(AF_INET, argv[1], &addr.sin_addr) != 1) {
     perror("inet_pton");
     return 1;
   }
