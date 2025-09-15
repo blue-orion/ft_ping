@@ -1,15 +1,23 @@
 #include "../includes/ping.h"
+#include <errno.h>
+#include <limits.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <poll.h>
 
 #define TTL 64
-#define INTERVAL 1000
 
 int	main(int ac, char **av) {
 	if (ac < 2) {
 		printf("Usage\n  ping [options] <destination>\n\n");
 		return 0;
 	}
+
+	ping_rts_t	rts;
+	statistic_t	stat;
+	memset(&stat, 0, sizeof(statistic_t));
+	stat.min_rtt = INT_MAX;
+	rts.stat = &stat;
 
 	// TODO: Check options
 	
@@ -18,62 +26,92 @@ int	main(int ac, char **av) {
 		perror("socket");
 		return 1;
 	}
+	rts.sockfd = sockfd;
 
 	// TODO: init_socket();
 
-	struct ping_rts	rts;
-	statistic	stat;
+	rts.sigfd = set_signal();
+	if (rts.sigfd < 0) {
+		perror("set signal");
+		exit(1);
+	}
+	set_destination(&rts, av[1]);
 
-	// TODO: set_address();
-	addr.sin_family = AF_INET;
-	if (inet_pton(AF_INET, av[1], &addr.sin_addr) != 1) {
-		perror("inet_pton");
-		return 1;
+	rts.interval = INTERVAL;
+	rts.t_send = init_tsend(&rts);
+	if (!rts.t_send) {
+		perror("malloc");
+		exit(1);
 	}
 
 	struct icmphdr	icmp_hdr;
-	char	packet[PACKET_SIZE];
-	char		result[PACKET_SIZE];
-	socklen_t	len;
-	struct timeval	st;
-	struct timeval	end;
-	double	rtt;
+	char		result[2048];
 
-	memset(&icmp_hdr, 0, sizeof(icmp_hdr));
-	icmp_hdr.type = ICMP_ECHO;
-	icmp_hdr.un.echo.id = getpid() & 0xFFFF;
-	icmp_hdr.un.echo.sequence = 1;
+	rts.msg_type = ICMP_ECHO;
+	rts.id = getpid() & 0xFFFF;
+	rts.seq = 1;
 
-	printf("PING %s: %d bytes data\n", av[1], DEFDATALEN);
-	for (int i = 0; i < 5; i++) {
-		gettimeofday(&st, NULL);
-		memset(packet, 0, sizeof(packet));
-		memcpy(packet, &icmp_hdr, sizeof(icmp_hdr));
-		((struct icmphdr *)packet)->checksum = checksum(packet, sizeof(packet));
+	int	polling;
+	printf("PING %s: %d(%d) bytes data\n", av[1], DEFDATALEN, ICMP_HEADER_SIZE + PACKET_SIZE);
+	struct timespec	st;
+	clock_gettime(CLOCK_MONOTONIC, &st);
 
-		if (sendto(sockfd, packet, sizeof(packet), 0, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-			perror("sendto");
-			return 1;
+	struct timespec	now;
+	double			next = 0;
+	double			rtt = 0;
+	struct icmphdr	reply;
+
+	clock_gettime(CLOCK_MONOTONIC, &rts.stat->st);
+	for (;;) {
+		polling = 0;
+
+		if (next <= 0) {
+			send_packet(&rts);
+			stat.ntransmitted++;
+			rts.seq++;
 		}
 
-		len = sizeof(addr);
-		if (recvfrom(sockfd, result, sizeof(result), 0, (struct sockaddr *)&addr, &len) == -1) {
-			perror("recvfrom");
-			return 1;
+		struct pollfd pfd[2];
+		pfd[0].fd = rts.sockfd;
+		pfd[0].events = POLLIN;
+		pfd[0].revents = 0;
+		
+		pfd[1].fd = rts.sigfd;
+		pfd[1].events = POLLIN;
+		pfd[1].revents = 0;
+
+		int	e = poll(pfd, 2, next);
+		if (e < 0) {
+			perror("poll");
+			exit(1);
 		}
-		uint16_t chk = checksum(result, sizeof(result));
-		if (chk != 0) {
-			printf("socket loss: %d\n", checksum(result, sizeof(result)));
+		if (pfd[1].revents & POLLIN) {
+			print_statistics(&rts, &stat);
 			return 0;
 		}
-		gettimeofday(&end, NULL);
-		
-		rtt = (end.tv_sec - st.tv_sec) * 1000.0;
-		rtt += (end.tv_usec - st.tv_usec) / 1000.0;
 
-		printf("%ld btyes from %s: icmp_seq=%d ttl=%d time=%.2f ms\n", sizeof(result), av[1], icmp_hdr.un.echo.sequence, TTL, rtt);
-		icmp_hdr.un.echo.sequence++;
-		usleep(1000000);
+		polling = MSG_DONTWAIT;
+
+		for (;;) {
+			int cc = recvfrom(rts.sockfd, result, sizeof(result), polling, 
+					(struct sockaddr *)&rts.dst, (socklen_t *)&rts.socklen);
+
+			if (cc < 0) {
+				if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+					break ;
+				}
+			}
+
+			if (parse_reply(&rts, result, cc) < 0) {
+				perror("parse reply");
+				exit(1);
+			}
+		}
+
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		rtt = (now.tv_sec - rts.last_send.tv_sec) * 1000.0;
+		rtt += (now.tv_nsec - rts.last_send.tv_nsec) / 1000000.0;
+		next = rts.interval - rtt;
 	}
 	return 0;
 }
