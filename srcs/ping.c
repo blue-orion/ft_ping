@@ -6,6 +6,8 @@ void	statistic_rtt(ping_rts_t *rts, char *payload, struct timespec *recv_time);
 void	send_packet(ping_rts_t *rts) {
 	char			packet[PACKET_SIZE];
 	struct icmphdr	icmp_hdr;
+	int				icmp_len;
+	struct timespec	tp;
 
 	memset(&icmp_hdr, 0, sizeof(icmp_hdr));
 	icmp_hdr.type = rts->msg_type; // ICMP_ECHO
@@ -16,26 +18,29 @@ void	send_packet(ping_rts_t *rts) {
 	memset(packet, 0, sizeof(packet));
 	memcpy(packet, &icmp_hdr, sizeof(icmp_hdr));
 
-	struct timespec	tp;
 	clock_gettime(CLOCK_MONOTONIC, &tp);
+	if (rts->stat->st.tv_sec == 0) {
+		rts->stat->st = tp;
+	}
 	memcpy(packet + sizeof(icmp_hdr), &tp, sizeof(tp));
-	rts->t_send[rts->seq & (rts->t_sendsize - 1)] = tp;
+	rts->t_send[seq_to_index(rts->seq, rts->t_sendsize)] = tp;
 	rts->last_send = tp;
 
-	int		icmplen = sizeof(icmp_hdr) + sizeof(tp);
-	memset(packet + icmplen, 'a', sizeof(packet) - icmplen);
+	icmp_len = sizeof(icmp_hdr) + sizeof(tp);
+	memset(packet + icmp_len, 'a', sizeof(packet) - icmp_len);
 	((struct icmphdr *)packet)->checksum = checksum(packet, sizeof(packet));
 
-	int	i = sendto(rts->sockfd, packet, sizeof(packet), 0, (struct sockaddr *)&rts->dst, rts->socklen);
-
-	if (i < 0) {
+	if (sendto(rts->sockfd, packet, sizeof(packet), 0, \
+			(struct sockaddr *)&rts->dst, rts->socklen) < 0) {
 		perror("sendto");
 		exit(1);
 	}
 }
 
 int	parse_reply(ping_rts_t *rts, char *packet, int cc) {
-	reply_t	reply;
+	reply_t			reply;
+	struct timespec	tp;
+	uint16_t 		check;
 
 	memcpy(&reply.ip4_hdr, packet, sizeof(reply.ip4_hdr));
 	reply.ip4_len = reply.ip4_hdr.ihl * 4;
@@ -48,30 +53,27 @@ int	parse_reply(ping_rts_t *rts, char *packet, int cc) {
 		return 1;
 	}
 
-	uint16_t check = checksum(packet + reply.ip4_len, cc - reply.ip4_len);
+	check = checksum(packet + reply.ip4_len, cc - reply.ip4_len);
 	if (check != 0) {
 		return -1;
 	}
 
-	struct timespec	tp;
 	clock_gettime(CLOCK_MONOTONIC, &tp);
-
 	print_reply_result(&reply, cc, &tp);
 	statistic_rtt(rts, reply.payload, &tp);
-
 	return 0;
 }
 
 void	statistic_rtt(ping_rts_t *rts, char *payload, struct timespec *recv_time) {
-	statistic_t	*stat = rts->stat;
-	double	rtt;
-	struct timespec send_time;
+	statistic_t		*stat;
+	double			rtt;
+	struct timespec	send_time;
 
+	stat = rts->stat;
 	stat->nrecved++;
 	memcpy(&send_time, payload, sizeof(send_time));
 
-	rtt = (recv_time->tv_sec - send_time.tv_sec) * 1000.0;
-	rtt += (recv_time->tv_nsec - send_time.tv_nsec) / 1000000.0;
+	rtt = get_time_diff(send_time, *recv_time);
 
 	stat->rtt_sum += rtt;
 	stat->rtt_sum2 += rtt * rtt;

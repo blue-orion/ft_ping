@@ -1,67 +1,30 @@
 #include "../includes/ping.h"
-#include <errno.h>
-#include <limits.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 #include <poll.h>
 
-#define TTL 64
-
 int	main(int ac, char **av) {
+	ping_rts_t	rts;
+	statistic_t	stat;
+
 	if (ac < 2) {
 		printf("Usage\n  ping [options] <destination>\n\n");
 		return 0;
 	}
 
-	ping_rts_t	rts;
-	statistic_t	stat;
-	memset(&stat, 0, sizeof(statistic_t));
-	stat.min_rtt = INT_MAX;
-	rts.stat = &stat;
+	init_rts(&rts, &stat, av[1]);
 
 	// TODO: Check options
 	
-	int	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	if (sockfd == -1) {
-		perror("socket");
-		return 1;
-	}
-	rts.sockfd = sockfd;
+	int					polling;
+	char				result[2048];
+	struct timespec		now;
+	double				next = 0;
+	double				runtime = 0;
+	struct sockaddr_in	src;
+	socklen_t			src_len;
 
-	// TODO: init_socket();
 
-	rts.sigfd = set_signal();
-	if (rts.sigfd < 0) {
-		perror("set signal");
-		exit(1);
-	}
-	set_destination(&rts, av[1]);
+	printf("PING %s (%s) %d (%d) bytes data\n", rts.src_host, rts.src_ip, DATALEN, ICMP_HEADER_SIZE + PACKET_SIZE);
 
-	rts.interval = INTERVAL;
-	rts.t_send = init_tsend(&rts);
-	if (!rts.t_send) {
-		perror("malloc");
-		exit(1);
-	}
-
-	struct icmphdr	icmp_hdr;
-	char		result[2048];
-
-	rts.msg_type = ICMP_ECHO;
-	rts.id = getpid() & 0xFFFF;
-	rts.seq = 1;
-
-	int	polling;
-	printf("PING %s: %d(%d) bytes data\n", av[1], DEFDATALEN, ICMP_HEADER_SIZE + PACKET_SIZE);
-	struct timespec	st;
-	clock_gettime(CLOCK_MONOTONIC, &st);
-
-	struct timespec	now;
-	double			next = 0;
-	double			rtt = 0;
-	struct icmphdr	reply;
-
-	clock_gettime(CLOCK_MONOTONIC, &rts.stat->st);
 	for (;;) {
 		polling = 0;
 
@@ -74,11 +37,9 @@ int	main(int ac, char **av) {
 		struct pollfd pfd[2];
 		pfd[0].fd = rts.sockfd;
 		pfd[0].events = POLLIN;
-		pfd[0].revents = 0;
 		
 		pfd[1].fd = rts.sigfd;
 		pfd[1].events = POLLIN;
-		pfd[1].revents = 0;
 
 		int	e = poll(pfd, 2, next);
 		if (e < 0) {
@@ -94,7 +55,7 @@ int	main(int ac, char **av) {
 
 		for (;;) {
 			int cc = recvfrom(rts.sockfd, result, sizeof(result), polling, 
-					(struct sockaddr *)&rts.dst, (socklen_t *)&rts.socklen);
+					(struct sockaddr *)&src, (socklen_t *)&src_len);
 
 			if (cc < 0) {
 				if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
@@ -109,9 +70,8 @@ int	main(int ac, char **av) {
 		}
 
 		clock_gettime(CLOCK_MONOTONIC, &now);
-		rtt = (now.tv_sec - rts.last_send.tv_sec) * 1000.0;
-		rtt += (now.tv_nsec - rts.last_send.tv_nsec) / 1000000.0;
-		next = rts.interval - rtt;
+		runtime = get_time_diff(rts.last_send, now);
+		next = rts.interval - runtime;
 	}
 	return 0;
 }

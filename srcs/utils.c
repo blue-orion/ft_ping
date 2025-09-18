@@ -11,3 +11,11 @@ struct timespec	get_send_time(ping_rts_t *rts, int seq) {
 double	get_ms_time(struct timespec tp) {
 	return tp.tv_sec * 1000.0 + tp.tv_nsec / 1000000.0;
 }
+
+double	get_time_diff(struct timespec start, struct timespec end) {
+	double	diff;
+
+	diff = (end.tv_sec - start.tv_sec) * 1000.0;
+	diff += (end.tv_nsec - end.tv_sec) / 1000000.0;
+	return diff;
+}

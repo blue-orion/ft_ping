@@ -5,7 +5,6 @@
 # include <stdlib.h>
 # include <unistd.h>
 # include <inttypes.h>
-
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <netinet/ip_icmp.h>
@@ -14,25 +13,41 @@
 # include <time.h>
 # include <string.h>
 # include <signal.h>
+# include <netdb.h>
+# include <errno.h>
 
 # define ICMP_HEADER_SIZE 20
 # define PACKET_SIZE 64
-# define DEFDATALEN (64 - 8)
-# define INTERVAL 1000
+# define DATALEN (64 - 8)
+# define DFL_INTERVAL 1000
+# define DFL_TTL 64
 
 typedef struct ping_rts	ping_rts_t;
 typedef struct reply	reply_t;
 typedef struct statistic statistic_t;
 
-void	print_statistics(ping_rts_t *rts, statistic_t *stat);
-int	checksum(void *packet, int len);
-int	set_signal();
+/* init.c */
+int		init_rts(ping_rts_t *rts, statistic_t *stat, char *dst);
+int		init_tsend(ping_rts_t *rts);
+int		set_signal();
 void	set_destination(ping_rts_t *rts, char *addr);
-struct timespec *init_tsend(ping_rts_t *rts);
+
+/* ping_output.c */
+void	print_statistics(ping_rts_t *rts, statistic_t *stat);
+
+/* valdiate.c */
+int		validate(ping_rts_t *rts, reply_t *reply, int cc);
+int		checksum(void *packet, int len);
+
+/* ping.c */
 void	send_packet(ping_rts_t *rts);
 int		parse_reply(ping_rts_t *rts, char *packet, int packlen);
-int	validate(ping_rts_t *rts, reply_t *reply, int cc);
-void	sigint_handler(int signum);
+
+/* ping_utils.c */
+int				seq_to_index(int seq, int n);
+struct timespec	get_send_time(ping_rts_t *rts, int seq);
+double			get_ms_time(struct timespec tp);
+double			get_time_diff(struct timespec start, struct timespec end);
 
 /* reply packet structure */
 struct reply {
@@ -72,17 +87,13 @@ struct ping_rts {
 	int				t_sendsize;
 	struct timespec	last_send;
 
-	char					*source;
+	char					*src_host;
+	char					src_ip[32];
 	struct sockaddr_in		dst;
 	struct sockaddr_in6		dst6;
 	int						socklen;
 
 	statistic_t	*stat;
-
-	// union {
-	// 	struct sockaddr_in	dst;
-	// 	struct sockaddr_in6	dst;
-	// };
 
 	/* option flag bit field */
 	unsigned int
@@ -108,9 +119,5 @@ struct ping_rts {
 		opt_size:1;
 };
 
-
-int	seq_to_index(int seq, int n);
-struct timespec	get_send_time(ping_rts_t *rts, int seq);
-double	get_ms_time(struct timespec tp);
 
 #endif
