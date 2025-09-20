@@ -3,12 +3,15 @@
 void	print_reply_result(reply_t *reply, int cc, struct timespec *recv_time);
 void	statistic_rtt(ping_rts_t *rts, char *payload, struct timespec *recv_time);
 
-void	send_packet(ping_rts_t *rts) {
+void	send_packet(ping_rts_t *rts, double next) {
 	char			packet[PACKET_SIZE];
 	struct icmphdr	icmp_hdr;
 	int				icmp_len;
 	struct timespec	tp;
 
+	if (next <= 0) {
+		return ;
+	}
 	memset(&icmp_hdr, 0, sizeof(icmp_hdr));
 	icmp_hdr.type = rts->msg_type; // ICMP_ECHO
 	icmp_hdr.code = 0;

@@ -16,6 +16,6 @@ double	get_time_diff(struct timespec start, struct timespec end) {
 	double	diff;
 
 	diff = (end.tv_sec - start.tv_sec) * 1000.0;
-	diff += (end.tv_nsec - end.tv_sec) / 1000000.0;
+	diff += (end.tv_nsec - start.tv_sec) / 1000000.0;
 	return diff;
 }

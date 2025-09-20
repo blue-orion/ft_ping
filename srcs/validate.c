@@ -5,6 +5,10 @@ int	validate_icmp(ping_rts_t *rts, struct icmphdr *ih, char *payload, int payloa
 
 int	validate(ping_rts_t *rts, reply_t *reply, int cc) {
 	// 패킷 총 길이와 실제 수신 받은 크기 비교
+	if (ntohs(reply->ip4_hdr.tot_len) != cc) {
+		printf("[DEBUG] Inconsistence total len(%d) and cc(%d)\n", \
+				ntohs(reply->ip4_hdr.tot_len), cc);
+	}
 
 	if (validate_ip4_hdr(&reply->ip4_hdr)) {
 		printf("[DEBUG] invalid ip4 header\n");

@@ -20,7 +20,7 @@ int	main(int ac, char **av) {
 	double				next = 0;
 	double				runtime = 0;
 	struct sockaddr_in	src;
-	socklen_t			src_len;
+	socklen_t			src_len = sizeof(src);
 
 
 	printf("PING %s (%s) %d (%d) bytes data\n", rts.src_host, rts.src_ip, DATALEN, ICMP_HEADER_SIZE + PACKET_SIZE);
@@ -28,11 +28,16 @@ int	main(int ac, char **av) {
 	for (;;) {
 		polling = 0;
 
-		if (next <= 0) {
-			send_packet(&rts);
+		do {
+			send_packet(&rts, next);
 			stat.ntransmitted++;
 			rts.seq++;
-		}
+
+			clock_gettime(CLOCK_MONOTONIC, &now);
+			runtime = get_time_diff(rts.last_send, now);
+			next = rts.interval - runtime;
+			printf("next = %.3f\n", next);
+		} while (next <= 0);
 
 		struct pollfd pfd[2];
 		pfd[0].fd = rts.sockfd;
@@ -54,6 +59,7 @@ int	main(int ac, char **av) {
 		polling = MSG_DONTWAIT;
 
 		for (;;) {
+			memset(result, 0, sizeof(result));
 			int cc = recvfrom(rts.sockfd, result, sizeof(result), polling, 
 					(struct sockaddr *)&src, (socklen_t *)&src_len);
 
@@ -61,17 +67,17 @@ int	main(int ac, char **av) {
 				if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 					break ;
 				}
+				else {
+					perror("recvfrom");
+					break ;
+				}
 			}
 
 			if (parse_reply(&rts, result, cc) < 0) {
 				perror("parse reply");
-				exit(1);
+				// exit(1);
 			}
 		}
-
-		clock_gettime(CLOCK_MONOTONIC, &now);
-		runtime = get_time_diff(rts.last_send, now);
-		next = rts.interval - runtime;
 	}
 	return 0;
 }

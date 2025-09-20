@@ -37,10 +37,13 @@ void	print_statistics(ping_rts_t *rts, statistic_t *stat);
 
 /* valdiate.c */
 int		validate(ping_rts_t *rts, reply_t *reply, int cc);
+
+/* checksum.c */
 int		checksum(void *packet, int len);
 
 /* ping.c */
-void	send_packet(ping_rts_t *rts);
+// void	send_packet(ping_rts_t *rts);
+void	send_packet(ping_rts_t *rts, double next);
 int		parse_reply(ping_rts_t *rts, char *packet, int packlen);
 
 /* ping_utils.c */
