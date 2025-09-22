@@ -23,7 +23,7 @@ void	print_reply_result(reply_t *reply, int cc, struct timespec *recv_time) {
 			sizeof(sa), host, sizeof(host), NULL, 0, 0);
 	int	seq = ntohs(reply->icmp_hdr.un.echo.sequence);
 
-	printf("%d btyes from %s (%s): icmp_seq=%d ttl=%d time=%.3f ms\n", cc, host, source, seq, ttl, rtt);
+	printf("%d btyes from %s (%s): icmp_seq=%d ttl=%d time=%.1f ms\n", cc, host, source, seq, ttl, rtt);
 }
 
 void	print_statistics(ping_rts_t *rts, statistic_t *stat) {

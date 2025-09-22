@@ -16,6 +16,12 @@ double	get_time_diff(struct timespec start, struct timespec end) {
 	double	diff;
 
 	diff = (end.tv_sec - start.tv_sec) * 1000.0;
-	diff += (end.tv_nsec - start.tv_sec) / 1000000.0;
+	diff += (end.tv_nsec - start.tv_nsec) / 1000000.0;
 	return diff;
+}
+
+void	cleanup_rts(ping_rts_t	*rts) {
+	close(rts->sockfd);
+	close(rts->sigfd);
+	free(rts->t_send);
 }

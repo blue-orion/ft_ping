@@ -9,7 +9,7 @@ void	send_packet(ping_rts_t *rts, double next) {
 	int				icmp_len;
 	struct timespec	tp;
 
-	if (next <= 0) {
+	if (next > 0) {
 		return ;
 	}
 	memset(&icmp_hdr, 0, sizeof(icmp_hdr));
@@ -38,6 +38,9 @@ void	send_packet(ping_rts_t *rts, double next) {
 		perror("sendto");
 		exit(1);
 	}
+	rts->stat->ntransmitted++;
+	rts->seq++;
+
 }
 
 int	parse_reply(ping_rts_t *rts, char *packet, int cc) {

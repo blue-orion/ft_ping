@@ -15,6 +15,7 @@
 # include <signal.h>
 # include <netdb.h>
 # include <errno.h>
+# include "error.h"
 
 # define ICMP_HEADER_SIZE 20
 # define PACKET_SIZE 64
@@ -28,9 +29,9 @@ typedef struct statistic statistic_t;
 
 /* init.c */
 int		init_rts(ping_rts_t *rts, statistic_t *stat, char *dst);
-int		init_tsend(ping_rts_t *rts);
-int		set_signal();
-void	set_destination(ping_rts_t *rts, char *addr);
+// int		init_tsend(ping_rts_t *rts);
+// int		set_signal();
+// int		set_destination(ping_rts_t *rts, char *addr);
 
 /* ping_output.c */
 void	print_statistics(ping_rts_t *rts, statistic_t *stat);
@@ -42,7 +43,6 @@ int		validate(ping_rts_t *rts, reply_t *reply, int cc);
 int		checksum(void *packet, int len);
 
 /* ping.c */
-// void	send_packet(ping_rts_t *rts);
 void	send_packet(ping_rts_t *rts, double next);
 int		parse_reply(ping_rts_t *rts, char *packet, int packlen);
 
@@ -51,6 +51,7 @@ int				seq_to_index(int seq, int n);
 struct timespec	get_send_time(ping_rts_t *rts, int seq);
 double			get_ms_time(struct timespec tp);
 double			get_time_diff(struct timespec start, struct timespec end);
+void			cleanup_rts(ping_rts_t	*rts);
 
 /* reply packet structure */
 struct reply {
@@ -81,6 +82,7 @@ struct ping_rts {
 	int	ttl;
 	int	interval;
 	int	timeout;
+	int	status;
 
 	uint16_t	id;
 	uint16_t	seq;
@@ -90,7 +92,7 @@ struct ping_rts {
 	int				t_sendsize;
 	struct timespec	last_send;
 
-	char					*src_host;
+	char					src_host[128];
 	char					src_ip[32];
 	struct sockaddr_in		dst;
 	struct sockaddr_in6		dst6;
