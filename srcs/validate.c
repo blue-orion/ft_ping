@@ -1,21 +1,39 @@
 #include "../includes/ping.h"
+#include <netinet/ip_icmp.h>
 
 int	validate_ip4_hdr(struct iphdr *ih);
 int	validate_icmp(ping_rts_t *rts, struct icmphdr *ih, char *payload, int payload_len);
 
 int	validate(ping_rts_t *rts, reply_t *reply, int cc) {
+	int			type;
+	uint16_t	check;
+
 	// 패킷 총 길이와 실제 수신 받은 크기 비교
 	if (ntohs(reply->ip4_hdr.tot_len) != cc) {
-		printf("[DEBUG] Inconsistence total len(%d) and cc(%d)\n", \
-				ntohs(reply->ip4_hdr.tot_len), cc);
+		return -1;
 	}
 
 	if (validate_ip4_hdr(&reply->ip4_hdr)) {
-		printf("[DEBUG] invalid ip4 header\n");
+		return -1;
+	}
+
+	// Skip ECHO REQUEST PACKET in localhost
+	if (reply->icmp_hdr.type == ICMP_ECHO) {
 		return 1;
 	}
+
+	if (reply->icmp_hdr.type != ICMP_ECHOREPLY || reply->icmp_hdr.code != 0) {
+		printf("[DEBUG] Invalid icmp type %d\n", reply->icmp_hdr.type);
+		return reply->icmp_hdr.type;
+	}
+
 	if (validate_icmp(rts, &reply->icmp_hdr, reply->payload, reply->payload_len)) {
-		return 1;
+		return -1;
+	}
+
+	check = checksum(reply->packet + reply->ip4_len, cc - reply->ip4_len);
+	if (check != 0) {
+		return -1;
 	}
 
 	return 0;
@@ -31,21 +49,13 @@ int	validate_ip4_hdr(struct iphdr *ih) {
 
 int	validate_icmp(ping_rts_t *rts, struct icmphdr *ih, char *payload, int payload_len) {
 	// Validate ICMP Header
-	// Skip ECHO REQUEST PACKET in localhost
-	if (ih->type == ICMP_ECHO) {
-		return 1;
-	}
-	if (ih->type != ICMP_ECHOREPLY || ih->code != 0) {
-		// printf("[DEBUG] Invalid icmp type %d\n", ih->type);
-		return ih->type;
-	}
 	if (rts->id != ntohs(ih->un.echo.id)) {
 		// printf("[DEBUG] Invalid reply id %d, %d\n", rts->id, ntohs(ih->un.echo.id));
-		return 1;
+		return -1;
 	}
 	if (ntohs(ih->un.echo.sequence) > rts->seq) {
 		// printf("[DEBUG] Invalid reply seq %d, %d\n", rts->seq, ih->un.echo.sequence);
-		return 1;
+		return -1;
 	}
 
 	// Validate ICMP Payload
@@ -54,8 +64,9 @@ int	validate_icmp(ping_rts_t *rts, struct icmphdr *ih, char *payload, int payloa
 
 	memcpy(&tp, payload, sizeof(tp));
 	if (memcmp(&tp, &send_time, sizeof(tp))) {
-		// printf("[DEBUG] sequence num = %d\n", ntohs(ih->un.echo.sequence));
-		// printf("[DEBUG] Invalid payload\nsend time %.2f, payload %.2f\n", get_ms_time(tp), get_ms_time(send_time));
+		printf("[DEBUG] sequence num = %d\n", ntohs(ih->un.echo.sequence));
+		printf("[DEBUG] Invalid payload\nsend time %.2f, payload %.2f\n", get_ms_time(tp), get_ms_time(send_time));
+		printf("[DEBUG] type: %d, code :%d\n", ih->type, ih->code);
 		return 1;
 	}
 	for (int i = sizeof(struct timespec); i < payload_len; i++) {

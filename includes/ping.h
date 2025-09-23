@@ -29,12 +29,12 @@ typedef struct statistic statistic_t;
 
 /* init.c */
 int		init_rts(ping_rts_t *rts, statistic_t *stat, char *dst);
-// int		init_tsend(ping_rts_t *rts);
-// int		set_signal();
-// int		set_destination(ping_rts_t *rts, char *addr);
 
 /* ping_output.c */
 void	print_statistics(ping_rts_t *rts, statistic_t *stat);
+void	print_reply_result(reply_t *reply, int cc);
+void	print_icmp_error(int code, int type);
+void	print_error_result(reply_t *reply);
 
 /* valdiate.c */
 int		validate(ping_rts_t *rts, reply_t *reply, int cc);
@@ -55,11 +55,13 @@ void			cleanup_rts(ping_rts_t	*rts);
 
 /* reply packet structure */
 struct reply {
+	char			*packet;
 	struct iphdr	ip4_hdr;
 	int				ip4_len;
 	struct icmphdr	icmp_hdr;
 	char 			*payload;
 	int				payload_len;
+	double			rtt;
 };
 
 struct statistic {
