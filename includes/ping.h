@@ -94,6 +94,7 @@ struct ping_rts {
 	int				t_sendsize;
 	struct timespec	last_send;
 
+	char					input[256];
 	char					src_host[128];
 	char					src_ip[32];
 	struct sockaddr_in		dst;

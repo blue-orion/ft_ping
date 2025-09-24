@@ -13,6 +13,10 @@ int	init_rts(ping_rts_t *rts, statistic_t *stat, char *dst) {
 	memset(rts, 0, sizeof(ping_rts_t));
 	rts->sockfd = -1;
 	rts->sigfd = -1;
+	if (strlen(dst) > sizeof(rts->input))
+		goto fail;
+
+	memcpy(rts->input, dst, sizeof(rts->input));
 
 	memset(stat, 0, sizeof(statistic_t));
 	stat->min_rtt = INT_MAX;

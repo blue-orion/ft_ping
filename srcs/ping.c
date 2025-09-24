@@ -78,7 +78,7 @@ int	parse_reply(ping_rts_t *rts, char *packet, int cc) {
 		return -1;
 	}
 
-	print_reply_result(&reply, cc, rts->src_ip);
+	print_reply_result(&reply, cc, rts->input);
 	statistic_rtt(rts, reply.payload, &tp);
 	return 0;
 }

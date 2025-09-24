@@ -3,7 +3,7 @@
 #include <math.h>
 #include <netinet/ip_icmp.h>
 
-void	print_reply_result(reply_t *reply, int cc, char *rts_src) {
+void	print_reply_result(reply_t *reply, int cc, char *rts_input) {
 	char	source[64];
 	char	host[64];
 	int		ttl;
@@ -15,7 +15,7 @@ void	print_reply_result(reply_t *reply, int cc, char *rts_src) {
 
 	inet_ntop(AF_INET,  &reply->ip4_hdr.saddr, source, INET_ADDRSTRLEN);
 
-	if (memcmp(source, rts_src, strlen(source)) != 0) {
+	if (memcmp(source, rts_input, strlen(source)) != 0) {
 		struct sockaddr_in	sa;
 		sa.sin_addr.s_addr = reply->ip4_hdr.saddr;
 		sa.sin_family = AF_INET;
