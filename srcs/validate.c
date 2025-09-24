@@ -5,7 +5,6 @@ int	validate_ip4_hdr(struct iphdr *ih);
 int	validate_icmp(ping_rts_t *rts, struct icmphdr *ih, char *payload, int payload_len);
 
 int	validate(ping_rts_t *rts, reply_t *reply, int cc) {
-	int			type;
 	uint16_t	check;
 
 	// 패킷 총 길이와 실제 수신 받은 크기 비교

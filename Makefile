@@ -1,7 +1,7 @@
 NAME = ft_ping
 
 CC = cc
-FLAGS = -g
+FLAGS = -Wall -Werror -Wextra
 
 SRC_DIR = srcs/
 SRCS = \
