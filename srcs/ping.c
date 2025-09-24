@@ -21,6 +21,9 @@ void	send_packet(ping_rts_t *rts, double next) {
 	memset(packet, 0, sizeof(packet));
 	memcpy(packet, &icmp_hdr, sizeof(icmp_hdr));
 
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	memcpy(packet + sizeof(icmp_hdr), &tp, sizeof(tp));
+
 	icmp_len = sizeof(icmp_hdr) + sizeof(tp);
 	memset(packet + icmp_len, 'a', sizeof(packet) - icmp_len);
 	((struct icmphdr *)packet)->checksum = checksum(packet, sizeof(packet));
@@ -31,11 +34,9 @@ void	send_packet(ping_rts_t *rts, double next) {
 		exit_error(2, errno, "sendto");
 	}
 
-	clock_gettime(CLOCK_MONOTONIC, &tp);
 	if (rts->stat->st.tv_sec == 0) {
 		rts->stat->st = tp;
 	}
-	memcpy(packet + sizeof(icmp_hdr), &tp, sizeof(tp));
 	rts->t_send[seq_to_index(rts->seq, rts->t_sendsize)] = tp;
 	rts->last_send = tp;
 
@@ -77,7 +78,7 @@ int	parse_reply(ping_rts_t *rts, char *packet, int cc) {
 		return -1;
 	}
 
-	print_reply_result(&reply, cc);
+	print_reply_result(&reply, cc, rts->src_ip);
 	statistic_rtt(rts, reply.payload, &tp);
 	return 0;
 }
@@ -92,7 +93,6 @@ void	statistic_rtt(ping_rts_t *rts, char *payload, struct timespec *recv_time) {
 	memcpy(&send_time, payload, sizeof(send_time));
 
 	rtt = get_time_diff(send_time, *recv_time);
-
 	stat->rtt_sum += rtt;
 	stat->rtt_sum2 += rtt * rtt;
 	if (rtt > stat->max_rtt)

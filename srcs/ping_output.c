@@ -3,7 +3,7 @@
 #include <math.h>
 #include <netinet/ip_icmp.h>
 
-void	print_reply_result(reply_t *reply, int cc) {
+void	print_reply_result(reply_t *reply, int cc, char *rts_src) {
 	char	source[64];
 	char	host[64];
 	int		ttl;
@@ -15,13 +15,19 @@ void	print_reply_result(reply_t *reply, int cc) {
 
 	inet_ntop(AF_INET,  &reply->ip4_hdr.saddr, source, INET_ADDRSTRLEN);
 
-	struct sockaddr_in	sa;
-	sa.sin_addr.s_addr = reply->ip4_hdr.saddr;
-	sa.sin_family = AF_INET;
-	getnameinfo((struct sockaddr *)&sa, sizeof(sa), host, sizeof(host), NULL, 0, 0);
+	if (memcmp(source, rts_src, strlen(source)) != 0) {
+		struct sockaddr_in	sa;
+		sa.sin_addr.s_addr = reply->ip4_hdr.saddr;
+		sa.sin_family = AF_INET;
+		getnameinfo((struct sockaddr *)&sa, sizeof(sa), host, sizeof(host), NULL, 0, 0);
 
-	printf("%d btyes from %s (%s): icmp_seq=%d ttl=%d time=%.1f ms\n", \
-		cc, host, source, seq, ttl, reply->rtt);
+		printf("%d btyes from %s (%s): icmp_seq=%d ttl=%d time=%.1f ms\n", \
+			cc, host, source, seq, ttl, reply->rtt);
+	}
+	else {
+		printf("%d btyes from %s: icmp_seq=%d ttl=%d time=%.1f ms\n", \
+			cc, source, seq, ttl, reply->rtt);
+	}
 }
 
 void	print_error_result(reply_t *reply) {

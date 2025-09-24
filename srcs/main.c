@@ -68,13 +68,8 @@ int	main(int ac, char **av) {
 				}
 			}
 			parse_reply(&rts, result, cc);
-			// if (parse_reply(&rts, result, cc) < 0) {
-			// 	perror("parse reply");
-			// 	// TODO: 에러난 패킷 처리
-			// }
 		}
 	}
 	cleanup_rts(&rts);
-	int	status;
 	return rts.status;
 }

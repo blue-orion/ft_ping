@@ -21,7 +21,7 @@
 # define PACKET_SIZE 64
 # define DATALEN (64 - 8)
 # define DFL_INTERVAL 1000
-# define DFL_TTL 64
+# define DFL_TTL 5
 
 typedef struct ping_rts	ping_rts_t;
 typedef struct reply	reply_t;
@@ -32,7 +32,7 @@ int		init_rts(ping_rts_t *rts, statistic_t *stat, char *dst);
 
 /* ping_output.c */
 void	print_statistics(ping_rts_t *rts, statistic_t *stat);
-void	print_reply_result(reply_t *reply, int cc);
+void	print_reply_result(reply_t *reply, int cc, char *rts_src);
 void	print_icmp_error(int code, int type);
 void	print_error_result(reply_t *reply);
 
@@ -125,6 +125,5 @@ struct ping_rts {
 		opt_route:1,
 		opt_size:1;
 };
-
 
 #endif
