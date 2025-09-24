@@ -33,10 +33,8 @@ void	print_reply_result(reply_t *reply, int cc, char *rts_input) {
 void	print_error_result(reply_t *reply) {
 	char	source[64];
 	char	host[64];
-	int		ttl;
 	int		seq;
 
-	ttl = reply->ip4_hdr.ttl;
 	seq = ntohs(reply->icmp_hdr.un.echo.sequence);
 
 	inet_ntop(AF_INET,  &reply->ip4_hdr.saddr, source, INET_ADDRSTRLEN);
@@ -62,6 +60,7 @@ void	print_icmp_error(int code, int type) {
 			printf("Packet filtered\n");
 			break ;
 		}
+		break ;
 	case ICMP_TIME_EXCEEDED:
 		printf("Time to live exceeded\n");
 		break ;
@@ -90,4 +89,15 @@ void	print_statistics(ping_rts_t *rts, statistic_t *stat) {
 				stat->min_rtt, stat->avg_rtt, stat->max_rtt, stat->mdev_rtt);
 	}
 	printf("\n");
+}
+
+void	print_help() {
+	fprintf(stderr, 
+		 "\nUsage\n"
+		 "  ping [options] <destination>\n"
+		 "\nOptions:\n"
+		 "  <destination>   dns name or ip address\n"
+		 "  -v              verbose output\n"
+		 "  -?              print help and exit\n"
+		 "\nFor more details ask to takwak.\n");
 }

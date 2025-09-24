@@ -1,17 +1,41 @@
 #include "../includes/ping.h"
+#include <asm-generic/errno.h>
 #include <poll.h>
 
 int	main(int ac, char **av) {
 	int			ret;
 	ping_rts_t	rts;
 	statistic_t	stat;
+	int			c;
 
 	if (ac < 2) {
 		exit_error(2, EDESTADDRREQ, "Usage error");
 		return 1;
 	}
 
-	ret = init_rts(&rts, &stat, av[1]); 
+	while (1) {
+		c = getopt(ac, av, "v?");
+		if (c == -1)
+			break ;
+
+		switch (c) {
+		case 'v':
+			rts.opt_verbose = 1;
+			break ;
+		default:
+			print_help();
+			return 2;
+		}
+	}
+
+	ac -= optind;
+	av += optind;
+
+	if (!ac) {
+		exit_error(1, EDESTADDRREQ, "usage error");
+	}
+
+	ret = init_rts(&rts, &stat, av[ac - 1]); 
 	if (ret < 0) {
 		if (IS_GAI_ERR(ret))
 			exit_error(2, 0, "%s: %s", av[1], gai_strerror(GET_GAI_CODE(ret)));

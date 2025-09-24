@@ -35,6 +35,7 @@ void	print_statistics(ping_rts_t *rts, statistic_t *stat);
 void	print_reply_result(reply_t *reply, int cc, char *rts_src);
 void	print_icmp_error(int code, int type);
 void	print_error_result(reply_t *reply);
+void	print_help();
 
 /* valdiate.c */
 int		validate(ping_rts_t *rts, reply_t *reply, int cc);
