@@ -68,7 +68,9 @@ void	print_icmp_error(int code, int type) {
 }
 
 
-void	print_statistics(ping_rts_t *rts, statistic_t *stat) {
+void	print_statistics(ping_rts_t *rts) {
+	statistic_t	*stat = rts->stat;
+
 	printf("\n--- %s ping statistics ---\n", rts->src_host);
 	printf("%d packets transmitted, ", stat->ntransmitted);
 	printf("%d received, ", stat->nrecved);

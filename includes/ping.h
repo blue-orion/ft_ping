@@ -31,7 +31,7 @@ typedef struct statistic statistic_t;
 int		init_rts(ping_rts_t *rts, statistic_t *stat, char *dst);
 
 /* ping_output.c */
-void	print_statistics(ping_rts_t *rts, statistic_t *stat);
+void	print_statistics(ping_rts_t *rts);
 void	print_reply_result(reply_t *reply, int cc, char *rts_src);
 void	print_icmp_error(int code, int type);
 void	print_error_result(reply_t *reply);
@@ -41,17 +41,18 @@ void	print_help();
 int		validate(ping_rts_t *rts, reply_t *reply, int cc);
 
 /* checksum.c */
-int		checksum(void *packet, int len);
 
 /* ping.c */
 void	send_packet(ping_rts_t *rts, double next);
 int		parse_reply(ping_rts_t *rts, char *packet, int packlen);
 
 /* ping_utils.c */
+uint16_t 		checksum(void *packet, int len);
 int				seq_to_index(int seq, int n);
 struct timespec	get_send_time(ping_rts_t *rts, int seq);
 double			get_ms_time(struct timespec tp);
 double			get_time_diff(struct timespec start, struct timespec end);
+void			parse_option(ping_rts_t *rts, int ac, char **av, char *opt);
 void			cleanup_rts(ping_rts_t	*rts);
 
 /* reply packet structure */
@@ -99,7 +100,6 @@ struct ping_rts {
 	char					src_host[128];
 	char					src_ip[32];
 	struct sockaddr_in		dst;
-	struct sockaddr_in6		dst6;
 	int						socklen;
 
 	statistic_t	*stat;
@@ -114,7 +114,7 @@ struct ping_rts {
 		opt_count:1,
 		opt_debug:1,
 		opt_interval:1,
-		opt_nemeric:1,
+		opt_numeric:1,
 		opt_ignore_route:1,
 		opt_tos:1,
 		opt_ttl:1,

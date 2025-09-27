@@ -1,4 +1,42 @@
 #include "../includes/ping.h"
+#include <inttypes.h>
+
+uint16_t checksum(void *packet, int len) {
+	uint16_t *buf;
+	uint32_t sum = 0;
+
+	buf = packet;
+	for (sum = 0; len > 1; len -= 2) {
+		sum += *buf++;
+	}
+	if (len == 1) {
+		sum += *(uint8_t *)buf << 8;
+	}
+
+	while (sum >> 16) {
+	  sum = (sum >> 16) + (sum & 0xFFFF);
+	}
+	return (~sum);
+}
+
+void	parse_option(ping_rts_t *rts, int ac, char **av, char *opt) {
+	int	c;
+	
+	while (1) {
+		c = getopt(ac, av, opt);
+		if (c == -1)
+			break ;
+
+		switch (c) {
+		case 'v':
+			rts->opt_verbose = 1;
+			break ;
+		default:
+			print_help();
+			exit(2);
+		}
+	}
+}
 
 int	seq_to_index(int seq, int n) {
 	return (seq & (n - 1));

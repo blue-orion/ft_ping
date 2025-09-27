@@ -10,7 +10,6 @@ int	init_rts(ping_rts_t *rts, statistic_t *stat, char *dst) {
 	int	saved = 0;
 	int	rc = 0;
 
-	memset(rts, 0, sizeof(ping_rts_t));
 	rts->sockfd = -1;
 	rts->sigfd = -1;
 	if (strlen(dst) > sizeof(rts->input))
@@ -18,7 +17,6 @@ int	init_rts(ping_rts_t *rts, statistic_t *stat, char *dst) {
 
 	memcpy(rts->input, dst, sizeof(rts->input));
 
-	memset(stat, 0, sizeof(statistic_t));
 	stat->min_rtt = INT_MAX;
 	rts->stat = stat;
 	rts->interval = DFL_INTERVAL;
