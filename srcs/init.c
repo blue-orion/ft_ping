@@ -9,13 +9,16 @@ static int	set_signal();
 int	init_rts(ping_rts_t *rts, statistic_t *stat, char *dst) {
 	int	saved = 0;
 	int	rc = 0;
+	int	dst_len;
 
 	rts->sockfd = -1;
 	rts->sigfd = -1;
-	if (strlen(dst) > sizeof(rts->input))
+	dst_len = strlen(dst);
+	if (dst_len > (int)sizeof(rts->input))
 		goto fail;
 
-	memcpy(rts->input, dst, sizeof(rts->input));
+	memcpy(rts->input, dst, dst_len);
+	rts->input[dst_len] = '\0';
 
 	stat->min_rtt = INT_MAX;
 	rts->stat = stat;

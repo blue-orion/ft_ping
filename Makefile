@@ -6,7 +6,6 @@ FLAGS = -Wall -Werror -Wextra
 SRC_DIR = srcs/
 SRCS = \
 	  main.c	\
-	  checksum.c	\
 	  init.c		\
 	  utils.c		\
 	  validate.c	\

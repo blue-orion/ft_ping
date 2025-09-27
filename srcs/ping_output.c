@@ -81,12 +81,12 @@ void	print_statistics(ping_rts_t *rts) {
 	double runtime = (rts->last_send.tv_sec - stat->st.tv_sec) * 1000.0;
 	runtime += (rts->last_send.tv_nsec - stat->st.tv_nsec) / 1000000.0;
 	double	loss = ((stat->ntransmitted - stat->nrecved) / (double)stat->ntransmitted) * 100.0;
-	stat->avg_rtt = stat->rtt_sum / stat->nrecved;
-	stat->mdev_rtt = sqrt((stat->rtt_sum2) / stat->nrecved - (stat->avg_rtt * stat->avg_rtt));
 	printf("%d%% packet loss, ", (int)loss);
 	printf("time %.fms\n", runtime);
 
 	if (stat->nrecved) {
+		stat->avg_rtt = stat->rtt_sum / stat->nrecved;
+		stat->mdev_rtt = sqrt((stat->rtt_sum2) / stat->nrecved - (stat->avg_rtt * stat->avg_rtt));
 		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms", 
 				stat->min_rtt, stat->avg_rtt, stat->max_rtt, stat->mdev_rtt);
 	}

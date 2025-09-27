@@ -58,14 +58,15 @@ int	validate_icmp(ping_rts_t *rts, struct icmphdr *ih, char *payload, int payloa
 	struct timespec	tp;
 	struct timespec	send_time = get_send_time(rts, ntohs(ih->un.echo.sequence));
 
-	memcpy(&tp, payload, sizeof(tp));
-	if (memcmp(&tp, &send_time, sizeof(tp))) {
+	if (payload_len < (int)sizeof(tp))
 		return 1;
-	}
+	memcpy(&tp, payload, sizeof(tp));
+	if (memcmp(&tp, &send_time, sizeof(tp)))
+		return 1;
+
 	for (int i = sizeof(struct timespec); i < payload_len; i++) {
-		if (payload[i] != 'a') {
+		if (payload[i] != 'a')
 			return 1;
-		}
 	}
 	return 0;
 }
