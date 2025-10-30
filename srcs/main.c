@@ -44,7 +44,7 @@ void	main_loop(ping_rts_t *rts) {
 	pfd[1].fd = rts->sigfd;
 	pfd[1].events = POLLIN;
 
-	printf("PING %s (%s) %d (%d) bytes data\n", \
+	printf("PING %s (%s) %d(%d) bytes data\n", \
 		rts->src_host, rts->src_ip, DATALEN, ICMP_HEADER_SIZE + PACKET_SIZE);
 	for (;;) {
 		do {
